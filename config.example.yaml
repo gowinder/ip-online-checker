@@ -1,0 +1,18 @@
+# Network monitoring configuration
+target:
+  # Use either IP or MAC address (MAC takes precedence if both are provided)
+  ip: "8.8.8.8"
+  mac: ""  # Optional: leave empty if not using MAC
+
+# Monitoring settings
+ping_interval: 5  # seconds between pings
+offline_threshold: 60  # seconds before declaring offline
+
+# Logging settings
+log_file: "./logs/monitoring.log"
+
+# Slack notification settings (optional)
+slack:
+  enabled: false
+  webhook_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  channel: "#network-monitoring"

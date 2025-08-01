@@ -7,6 +7,7 @@ target:
 # Monitoring settings
 ping_interval: 5  # seconds between pings
 offline_threshold: 60  # seconds before declaring offline
+heartbeat_interval: 300  # seconds between heartbeat logs (5 minutes)
 
 # Logging settings
 log_file: "./logs/monitoring.log"

@@ -21,6 +21,7 @@ class NetworkMonitor:
         self.ping_interval = self.config['ping_interval']
         self.offline_threshold = self.config['offline_threshold']
         self.online_threshold = self.config.get('online_threshold', 60)  # Default 1 minute
+        self.heartbeat_interval = self.config.get('heartbeat_interval', 300)  # Default 5 minutes
         self.log_file = self.config['log_file']
         
         # Slack configuration
@@ -33,6 +34,8 @@ class NetworkMonitor:
         self.last_state_change = None
         self.offline_start_time = None
         self.online_start_time = None
+        self.start_time = datetime.datetime.now()
+        self.last_heartbeat_time = datetime.datetime.now()
         
         # Use MAC if provided, otherwise use IP
         self.target = self.target_mac if self.target_mac else self.target_ip
@@ -107,6 +110,27 @@ class NetworkMonitor:
             return f"{minutes}分钟{seconds}秒"
         else:
             return f"{seconds}秒"
+    
+    def send_heartbeat(self):
+        """Send a heartbeat log to show the program is still running."""
+        current_time = datetime.datetime.now()
+        if current_time - self.last_heartbeat_time >= datetime.timedelta(seconds=self.heartbeat_interval):
+            # Calculate current state duration
+            if self.last_state_change:
+                state_duration_str = self.format_duration(self.last_state_change, current_time)
+            else:
+                state_duration_str = "0秒"
+            
+            # Calculate total running time
+            running_time_str = self.format_duration(self.start_time, current_time)
+            
+            # Send heartbeat log
+            state_str = "在线" if self.is_online else "离线"
+            heartbeat_msg = f"[心跳] 当前状态: {state_str} | 持续时间: {state_duration_str} | 运行时间: {running_time_str}"
+            self.log_event(heartbeat_msg)
+            
+            # Update last heartbeat time
+            self.last_heartbeat_time = current_time
     
     def record_state_change(self, new_state: bool):
         """Record a state change (online/offline) with timestamp."""
@@ -190,6 +214,9 @@ class NetworkMonitor:
                         self.online_start_time = None
                     else:
                         self.offline_start_time = None
+                
+                # Send heartbeat if needed
+                self.send_heartbeat()
                 
                 time.sleep(self.ping_interval)
                 

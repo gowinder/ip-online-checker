@@ -60,8 +60,8 @@ class NetworkMonitor:
             sys.stdout.flush()
             return False
     
-    def log_event(self, message: str):
-        """Log an event to the log file with timestamp."""
+    def log_event(self, message: str, log_to_file: bool = True):
+        """Log an event to the console and optionally to a file."""
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_entry = f"[{timestamp}] {message}\n"
         
@@ -69,14 +69,15 @@ class NetworkMonitor:
         print(log_entry.strip())
         sys.stdout.flush()
         
-        # Write to log file
-        try:
-            os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
-            with open(self.log_file, 'a') as f:
-                f.write(log_entry)
-        except Exception as e:
-            print(f"Error writing to log file: {e}")
-            sys.stdout.flush()
+        # Write to log file if enabled
+        if log_to_file:
+            try:
+                os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
+                with open(self.log_file, 'a') as f:
+                    f.write(log_entry)
+            except Exception as e:
+                print(f"Error writing to log file: {e}")
+                sys.stdout.flush()
     
     def send_slack_notification(self, message: str):
         """Send a notification to Slack if enabled."""
@@ -127,7 +128,7 @@ class NetworkMonitor:
             # Send heartbeat log
             state_str = "在线" if self.is_online else "离线"
             heartbeat_msg = f"[心跳] 当前状态: {state_str} | 持续时间: {state_duration_str} | 运行时间: {running_time_str}"
-            self.log_event(heartbeat_msg)
+            self.log_event(heartbeat_msg, log_to_file=False)
             
             # Update last heartbeat time
             self.last_heartbeat_time = current_time

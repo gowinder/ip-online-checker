@@ -9,6 +9,8 @@ import time
 import requests
 import yaml
 
+from version import VERSION
+
 
 class NetworkMonitor:
     def __init__(self, config_path: str = "config.yaml"):
@@ -169,6 +171,7 @@ class NetworkMonitor:
     
     def run(self):
         """Main monitoring loop."""
+        print("version: ", VERSION)
         self.log_event(f"开始监控目标: {self.target} ({'MAC' if self.use_mac else 'IP'})")
         
         # Initialize state

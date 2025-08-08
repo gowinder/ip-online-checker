@@ -4,12 +4,13 @@ import datetime
 import os
 import subprocess
 import sys
-import time
 import threading
-from typing import Dict, List, Optional
+import time
 
 import requests
 import yaml
+
+from version import VERSION
 
 
 class NetworkMonitor:
@@ -264,6 +265,7 @@ class MultiNetworkMonitor:
     
     def run(self):
         """Run all monitors in separate threads."""
+        print("version: ", VERSION)
         if not self.monitors:
             print("没有配置监控目标")
             return

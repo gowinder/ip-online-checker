@@ -1,0 +1,28 @@
+# Network monitoring configuration for multiple targets
+targets:
+  - ip: "192.168.1.17"
+    mac: ""  # Optional: leave empty if not using MAC
+    enable: true
+    ping_interval: 5  # seconds between pings
+    offline_threshold: 60  # seconds before declaring offline
+    online_threshold: 60  # seconds before declaring online
+  - ip: "192.168.1.18"
+    mac: ""  # Optional: leave empty if not using MAC
+    enable: true
+    ping_interval: 10  # seconds between pings
+    offline_threshold: 120  # seconds before declaring offline
+    online_threshold: 60  # seconds before declaring online
+
+# Global settings (can be overridden per target)
+global_ping_interval: 5  # seconds between pings
+global_offline_threshold: 60  # seconds before declaring offline
+global_heartbeat_interval: 300  # seconds between heartbeat logs (5 minutes)
+
+# Logging settings
+log_path: "./logs"  # Base path for log files
+
+# Slack notification settings (optional)
+slack:
+  enabled: false
+  webhook_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  channel: "#network-monitoring"

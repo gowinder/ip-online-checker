@@ -4,6 +4,7 @@ import datetime
 import os
 import subprocess
 import sys
+import threading
 import time
 
 import requests
@@ -13,23 +14,25 @@ from version import VERSION
 
 
 class NetworkMonitor:
-    def __init__(self, config_path: str = "config.yaml"):
-        """Initialize the network monitor with configuration file."""
-        with open(config_path, 'r') as f:
-            self.config = yaml.safe_load(f)
+    def __init__(self, target_config: dict, global_config: dict, log_path: str):
+        """Initialize the network monitor with target configuration."""
+        self.target_ip = target_config['ip']
+        self.target_mac = target_config.get('mac', '')
+        self.enable = target_config.get('enable', True)
+        self.ping_interval = target_config.get('ping_interval', global_config.get('global_ping_interval', 5))
+        self.offline_threshold = target_config.get('offline_threshold', global_config.get('global_offline_threshold', 60))
+        self.online_threshold = target_config.get('online_threshold', 60)  # Default 1 minute
+        self.heartbeat_interval = global_config.get('global_heartbeat_interval', 300)  # Default 5 minutes
         
-        self.target_ip = self.config['target']['ip']
-        self.target_mac = self.config['target']['mac']
-        self.ping_interval = self.config['ping_interval']
-        self.offline_threshold = self.config['offline_threshold']
-        self.online_threshold = self.config.get('online_threshold', 60)  # Default 1 minute
-        self.heartbeat_interval = self.config.get('heartbeat_interval', 300)  # Default 5 minutes
-        self.log_file = self.config['log_file']
+        # Generate log file path based on IP address
+        safe_ip = self.target_ip.replace('.', '_')
+        self.log_file = os.path.join(log_path, f"mon_{safe_ip}.log")
         
         # Slack configuration
-        self.slack_enabled = self.config['slack']['enabled']
-        self.slack_webhook_url = self.config['slack']['webhook_url']
-        self.slack_channel = self.config['slack']['channel']
+        slack_config = global_config.get('slack', {})
+        self.slack_enabled = slack_config.get('enabled', False)
+        self.slack_webhook_url = slack_config.get('webhook_url', '')
+        self.slack_channel = slack_config.get('channel', '')
         
         # State tracking
         self.is_online = False
@@ -171,7 +174,10 @@ class NetworkMonitor:
     
     def run(self):
         """Main monitoring loop."""
-        print("version: ", VERSION)
+        if not self.enable:
+            self.log_event(f"目标 {self.target} 未启用，跳过监控")
+            return
+            
         self.log_event(f"开始监控目标: {self.target} ({'MAC' if self.use_mac else 'IP'})")
         
         # Initialize state
@@ -240,7 +246,47 @@ class NetworkMonitor:
                 self.log_event(f"监控错误: {e}")
                 time.sleep(self.ping_interval)
 
+
+class MultiNetworkMonitor:
+    def __init__(self, config_path: str = "config.yaml"):
+        """Initialize the multi-network monitor with configuration file."""
+        with open(config_path, 'r') as f:
+            self.config = yaml.safe_load(f)
+        
+        self.targets = self.config.get('targets', [])
+        self.global_config = {k: v for k, v in self.config.items() if k != 'targets'}
+        self.log_path = self.config.get('log_path', './logs')
+        
+        # Create monitor instances for each target
+        self.monitors = []
+        for target_config in self.targets:
+            monitor = NetworkMonitor(target_config, self.global_config, self.log_path)
+            self.monitors.append(monitor)
+    
+    def run(self):
+        """Run all monitors in separate threads."""
+        print("version: ", VERSION)
+        if not self.monitors:
+            print("没有配置监控目标")
+            return
+        
+        threads = []
+        for monitor in self.monitors:
+            if monitor.enable:
+                thread = threading.Thread(target=monitor.run)
+                thread.daemon = True
+                thread.start()
+                threads.append(thread)
+        
+        # Wait for all threads to complete (they won't in normal operation)
+        try:
+            for thread in threads:
+                thread.join()
+        except KeyboardInterrupt:
+            print("多目标监控已停止")
+
+
 if __name__ == "__main__":
-    config_path = sys.argv[1] if len(sys.argv) > 1 else "config.yaml"
-    monitor = NetworkMonitor(config_path)
+    config_path = sys.argv[1] if len(sys.argv) > 1 else "config_multi.yaml"
+    monitor = MultiNetworkMonitor(config_path)
     monitor.run()

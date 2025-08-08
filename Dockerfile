@@ -11,14 +11,14 @@ RUN apk add --no-cache \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the monitoring script
-COPY monitor.py .
+# Copy the monitoring scripts and version file
+COPY monitor.py multi_monitor.py version.py .
 
 # Create directories for logs
 RUN mkdir -p /app/logs
 
-# Make the script executable
-RUN chmod +x monitor.py
+# Make the scripts executable
+RUN chmod +x monitor.py multi_monitor.py
 
 # Default command
-CMD ["python", "monitor.py", "/config/config.yaml"]
+CMD ["python", "multi_monitor.py", "/config/config.yaml"]

@@ -3,7 +3,7 @@ services:
     build: .
     container_name: network-monitor
     volumes:
-      - ./config.yaml:/config/config.yaml:ro
+      - ./config_multi.yaml:/config/config.yaml:ro
       - ./logs:/app/logs
     network_mode: host
     environment:
